@@ -250,6 +250,17 @@ def on() {
 
 def off() {
 	log.debug "OFF method executed started!"
+
+	// In case you turn off the device during a schedule it will set the scheduler to 1 second to cancel it
+	//runIn(1, sleepautooff)
+    //unschedule(sleepautooff)
+	unschedule()
+
+    sendEvent(name: "sleep1", value: "sleep1off")
+	sendEvent(name: "sleep15", value: "sleep15off")
+	sendEvent(name: "sleep30", value: "sleep30off")
+	sendEvent(name: "sleep60", value: "sleep60off")		
+
 	delayBetween([
 			zwave.basicV1.basicSet(value: 0x00).format(),
 			zwave.switchMultilevelV1.switchMultilevelGet().format()
@@ -283,9 +294,8 @@ def setLevel(value, duration) {
 /**
  * Sleep Method
  * */
-
+//void sleep1() {
 def sleep1() {
-
 	def min = 1
 	log.debug "Sleep1 method executed started!"
 	sendEvent(name: "switch", value: "on")
@@ -294,11 +304,8 @@ def sleep1() {
 	sendEvent(name: "sleep30", value: "sleep30off")
 	sendEvent(name: "sleep60", value: "sleep60off")
 
-    runIn(60 * min, sleepoff)
-    delayBetween([
-            on(),
-            off()
-    ], min*60000) //in ms:   60000 is 1 minute, 5*60000 is 5 mins	
+	autoon()
+	runIn(60 * min, sleepautooff)
 }
 
 def sleep15() {
@@ -310,11 +317,8 @@ def sleep15() {
 	sendEvent(name: "sleep30", value: "sleep30off")
 	sendEvent(name: "sleep60", value: "sleep60off")
 
-    runIn(60 * min, sleepoff)
-    delayBetween([
-            on(),
-            off()
-    ], min*60000) //in ms:   60000 is 1 minute, 5*60000 is 5 mins	
+	autoon()
+	runIn(60 * min, sleepautooff)
 }
 
 def sleep30() {
@@ -326,11 +330,8 @@ def sleep30() {
 	sendEvent(name: "sleep30", value: "sleep30on")
 	sendEvent(name: "sleep60", value: "sleep60off")
 
-    runIn(60 * min, sleepoff)
-    delayBetween([
-            on(),
-            off()
-    ], min*60000) //in ms:   60000 is 1 minute, 5*60000 is 5 mins	
+	autoon()
+	runIn(60 * min, sleepautooff)	
 }
 
 def sleep60() {
@@ -342,23 +343,50 @@ def sleep60() {
 	sendEvent(name: "sleep30", value: "sleep30off")
 	sendEvent(name: "sleep60", value: "sleep60on")
 
-    runIn(60 * min, sleepoff)
-    delayBetween([
-            on(),
-            off()
-    ], min*60000) //in ms:   60000 is 1 minute, 5*60000 is 5 mins	
+	autoon()
+	runIn(60 * min, sleepautooff)	
 }
 
-def sleepoff(){
-	log.debug "Sleepoff method executed started!"
+// To call a sendHubCommand the methods must be void or return an HubAction object
+void sleepautooff(){
+	log.debug "SleepAutooff method executed started!"
     sendEvent(name: "switch", value: "off")
     sendEvent(name: "sleep1", value: "sleep1off")
 	sendEvent(name: "sleep15", value: "sleep15off")
 	sendEvent(name: "sleep30", value: "sleep30off")
 	sendEvent(name: "sleep60", value: "sleep60off")	
 
-    off()
+	/*
+	def cmds = [
+			new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: 0x00).format()),
+			new physicalgraph.device.HubAction(zwave.switchMultilevelV1.switchMultilevelGet().format())	
+	]
+	sendHubCommand(cmds)
+	*/
+	delayBetween([
+            sendHubCommand(new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: 0x00).format())),
+            sendHubCommand(new physicalgraph.device.HubAction(zwave.switchMultilevelV1.switchMultilevelGet().format()))
+    ], 5000)
 }
+
+// To call a sendHubCommand the methods must be void or return an HubAction object
+void autoon() {
+	log.debug "AutoON method executed started!"
+	/*
+	def cmds = [
+			new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: 0xFF).format()),
+			new physicalgraph.device.HubAction(zwave.switchMultilevelV1.switchMultilevelGet().format())	
+	]
+	sendHubCommand(cmds)
+	*/
+
+    delayBetween([
+            sendHubCommand(new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: 0xFF).format())),
+            sendHubCommand(new physicalgraph.device.HubAction(zwave.switchMultilevelV1.switchMultilevelGet().format()))
+    ], 5000)
+}
+
+
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
